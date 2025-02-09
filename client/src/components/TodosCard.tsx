@@ -1,28 +1,17 @@
 import { TodosInterface } from "../interface/TodosInterface"
+import TodosList from "./TodosList"
 
-interface todoCardsInterface {
-  filteredTodos: TodosInterface[],
-
+interface todoCardInterface {
+  filteredTodos: TodosInterface[];
+  deleteItem: (id: number) => void;
+  completeTask: (id: number) => void;
 }
 
-export const TodosCard = ({ filteredTodos }: todoCardsInterface) => {
+export const TodosCard = ({ filteredTodos, deleteItem, completeTask }: todoCardInterface) => {
   return (
     <ul className="card p-3 bg-gray-500 rounded shadow">
     {filteredTodos.map((item: TodosInterface) => (
-      <li key={item.id} className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-lg flex-[1]">
-          <input id={`${item.id}`} type="checkbox" />
-          <label className="w-full" htmlFor={`${item.id}`}>
-            {item.task} 
-          </label>
-        </div>
-        <div className="flex items-center gap-2">
-          <button 
-          className="cursor-pointer text-red-800 hover:text-red-600 duration-500">
-            Delete
-          </button>
-        </div>
-      </li>
+      <TodosList key={item.id} item={item}  deleteItem={deleteItem} completeTask={completeTask} />
     ))}
 </ul>
   )
