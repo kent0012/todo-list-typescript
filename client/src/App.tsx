@@ -1,64 +1,78 @@
-
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 
 import { TodosInterface } from "./interface/TodosInterface";
+import { TodosCard } from "./components/TodosCard";
 
 const App = () => {
+  const todosAPI = import.meta.env.VITE_BASE_URL;
 
- const todosAPI = import.meta.env.VITE_BASE_URL;
+  const [todos, setTodos] = useState<TodosInterface[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Fixed typo
+  const [error, setError] = useState<string>("");
+  const [search, setSearch] = useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = useState<string>("");
 
- const [todos, setTodos] = useState<TodosInterface[]>([]);
- const [isLoading, setiIsLoading] = useState<boolean>(true);
- const [error, setError] = useState<string>("");
+  useEffect(() => {
+    const fetchTodos = async () => {
+      try {
+        const response = await axios.get(`${todosAPI}`);
+        setTodos(response.data);
+      } catch (err) {
+        setError("Failed to fetch todos");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-useEffect(() => {
-  const fetchTodos = async () => {
-    try {
-      const response = await axios.get(`${todosAPI}`);
-      setTodos(response.data);
-      setiIsLoading(false);
-    } catch (err) {
-      setError("Failed to fetch todos");
-      setiIsLoading(false);
-    }
+    fetchTodos();
+  }, []);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500); 
+
+    return () => clearTimeout(handler); 
+  }, [search]);
+
+  const handleSearch = (e: ChangeEvent<HTMLInputElement>): void => {
+    setSearch(e.target.value);
   };
 
-  fetchTodos();
-}, []);
-
-
-if (isLoading) return <p>Loading...</p>
-if (error) return <p>{`Error: ${error}`}</p>
-
+  const filteredTodos = todos.filter((todo) =>
+    Object.values(todo).some((value) =>
+      String(value).toLowerCase().includes(debouncedSearch.toLowerCase()) // Use debouncedSearch
+    )
+  );
 
   return (
     <div className="bg-black p-4 h-dvh w-full text-white">
-        <section className="max-w-4xl h-full flex-col mx-auto flex justify-center items-center">
-          <div className="bg-gray-700 p-4 flex-col gap-3 w-lg flex rounded">
-            <h3 className="md:text-3xl text-1xl">Todo List</h3>
-            <ul className="card p-3 bg-gray-500 rounded shadow">
-                {todos.map((item: TodosInterface) => (
-                  <li key={item.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-lg flex-[1]">
-                      <input id={`${item.id}`} type="checkbox" />
-                      <label className="w-full" htmlFor={`${item.id}`}>
-                        {item.task} 
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button 
-                      className="cursor-pointer text-red-800 hover:text-red-600 duration-500">
-                        Delete
-                      </button>
-                    </div>
-                  </li>
-                ))}
-            </ul>
+      <section className="max-w-4xl h-full flex-col mx-auto flex justify-center items-center">
+        <div className="bg-gray-700 p-4 flex-col gap-3 w-lg flex rounded">
+          <div className="flex items-center justify-between gap-5">
+            <h3 className="md:text-3xl text-1xl">Todos</h3>
+            <input
+              type="text"
+              value={search}
+              onChange={handleSearch}
+              className="p-2 border rounded w-full"
+              placeholder="Search"
+            />
           </div>
-        </section>
+          {isLoading ? (
+            <p className="text-gray-400 text-center">Loading...</p>
+          ) : error ? (
+            <p className="text-gray-400 text-center">Error: {error}</p>
+          ) : filteredTodos.length === 0 ? (
+            <p className="text-gray-400 text-center">No todos found</p>
+          ) : (
+            <TodosCard filteredTodos={filteredTodos} /> // Fixed prop name
+          )}
+        </div>
+      </section>
     </div>
-  )
-}
+  );
+};
 
-export default App
+export default App;
